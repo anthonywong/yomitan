@@ -19,6 +19,7 @@ import type {TokenString, EventNames, EventArgument as BaseEventArgument} from '
 import type {SearchMode} from './display';
 import type {FrameEndpointReadyDetails, FrameEndpointConnectedDetails} from './frame-client';
 import type {DatabaseUpdateType, DatabaseUpdateCause} from './backend';
+import type * as OcrUtil from './ocr-util';
 import type {
     ApiMap as BaseApiMap,
     ApiHandler as BaseApiHandler,
@@ -106,6 +107,27 @@ export type ApiSurface = {
         return: void;
     };
     frontendScanSelectedText: {
+        params: void;
+        return: void;
+    };
+    ocrRecognizeImage: {
+        params: {
+            mode: OcrUtil.Mode;
+            srcUrl: string | null;
+        };
+        return: void;
+    };
+    ocrSelectRegion: {
+        params: {
+            mode: OcrUtil.Mode;
+        };
+        return: void;
+    };
+    ocrRefresh: {
+        params: void;
+        return: void;
+    };
+    ocrClear: {
         params: void;
         return: void;
     };

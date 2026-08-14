@@ -67,6 +67,7 @@
                             "popupWindow",
                             "audio",
                             "scanning",
+                            "ocr",
                             "translation",
                             "dictionaries",
                             "parsing",
@@ -848,6 +849,18 @@
                                             "word"
                                         ],
                                         "default": "character"
+                                    }
+                                }
+                            },
+                            "ocr": {
+                                "type": "object",
+                                "required": [
+                                    "enabled"
+                                ],
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
                                     }
                                 }
                             },

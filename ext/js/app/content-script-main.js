@@ -17,8 +17,10 @@
  */
 
 import {Application} from '../application.js';
+import {TextSourceGenerator} from '../dom/text-source-generator.js';
 import {HotkeyHandler} from '../input/hotkey-handler.js';
 import {Frontend} from './frontend.js';
+import {OcrController} from './ocr-controller.js';
 import {PopupFactory} from './popup-factory.js';
 
 await Application.main(false, async (application) => {
@@ -29,6 +31,7 @@ await Application.main(false, async (application) => {
     popupFactory.prepare();
 
     const {browser} = await application.api.getEnvironmentInfo();
+    const textSourceGenerator = new TextSourceGenerator();
 
     const frontend = new Frontend({
         application,
@@ -43,6 +46,10 @@ await Application.main(false, async (application) => {
         childrenSupported: true,
         hotkeyHandler,
         browser: browser,
+        textSourceGenerator,
     });
     await frontend.prepare();
+
+    const ocrController = new OcrController({application, textSourceGenerator});
+    await ocrController.prepare();
 });

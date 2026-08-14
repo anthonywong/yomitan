@@ -49,6 +49,7 @@ export class Frontend {
         childrenSupported = true,
         hotkeyHandler,
         browser,
+        textSourceGenerator = new TextSourceGenerator(),
     }) {
         /** @type {import('../application.js').Application} */
         this._application = application;
@@ -85,7 +86,7 @@ export class Frontend {
         /** @type {Promise<void>} */
         this._lastShowPromise = Promise.resolve();
         /** @type {TextSourceGenerator} */
-        this._textSourceGenerator = new TextSourceGenerator();
+        this._textSourceGenerator = textSourceGenerator;
         /** @type {TextScanner} */
         this._textScanner = new TextScanner({
             api: application.api,

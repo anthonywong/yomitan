@@ -617,6 +617,9 @@ function createProfileOptionsUpdatedTestData1() {
         accessibility: {
             forceGoogleDocsHtmlRendering: false,
         },
+        ocr: {
+            enabled: true,
+        },
     };
 }
 
@@ -707,7 +710,7 @@ function createOptionsUpdatedTestData1() {
             },
         ],
         profileCurrent: 0,
-        version: 77,
+        version: 78,
         global: {
             database: {
                 prefixWildcardsSupported: false,

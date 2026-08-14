@@ -52,6 +52,21 @@ export class API {
     }
 
     /**
+     * @param {import('api').ApiParam<'ocrFetchImage', 'url'>} url
+     * @returns {Promise<import('api').ApiReturn<'ocrFetchImage'>>}
+     */
+    ocrFetchImage(url) {
+        return this._invoke('ocrFetchImage', {url});
+    }
+
+    /**
+     * @returns {Promise<import('api').ApiReturn<'ocrCaptureVisibleTab'>>}
+     */
+    ocrCaptureVisibleTab() {
+        return this._invoke('ocrCaptureVisibleTab', void 0);
+    }
+
+    /**
      * @param {import('api').ApiParam<'termsFind', 'text'>} text
      * @param {import('api').ApiParam<'termsFind', 'details'>} details
      * @param {import('api').ApiParam<'termsFind', 'optionsContext'>} optionsContext

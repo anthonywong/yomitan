@@ -49,6 +49,9 @@
                 "all_frames": true,
                 "js": [
                     "js/app/content-script-wrapper.js"
+                ],
+                "css": [
+                    "css/ocr.css"
                 ]
             }
         ],
@@ -110,7 +113,11 @@
                     "popup.html",
                     "template-renderer.html",
                     "js/*",
-                    "lib/resvg.wasm"
+                    "lib/resvg.wasm",
+                    "lib/tesseract/tesseract.esm.min.js",
+                    "lib/tesseract/worker.min.js",
+                    "lib/tesseract/core/*",
+                    "lib/tesseract/lang/*"
                 ],
                 "matches": [
                     "<all_urls>"
