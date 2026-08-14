@@ -40,6 +40,43 @@ async function copyWasm(out) {
     fs.copyFileSync(wasmPath, path.join(out, 'resvg.wasm'));
 }
 
+/**
+ * Copies the local OCR runtime and Japanese language data into the generated
+ * extension library directory. No runtime or build-time CDN fetch is used.
+ * @param {string} out
+ */
+async function copyTesseract(out) {
+    const tesseractPath = path.dirname(require.resolve('tesseract.js/package.json'));
+    const corePath = path.dirname(require.resolve('tesseract.js-core/package.json'));
+    const japaneseDataPath = path.dirname(require.resolve('@tesseract.js-data/jpn/package.json'));
+    const verticalJapaneseDataPath = path.dirname(require.resolve('@tesseract.js-data/jpn_vert/package.json'));
+    const coreOutputPath = path.join(out, 'core');
+    const languageOutputPath = path.join(out, 'lang');
+
+    fs.rmSync(out, {recursive: true, force: true});
+    fs.mkdirSync(coreOutputPath, {recursive: true});
+    fs.mkdirSync(languageOutputPath, {recursive: true});
+    fs.copyFileSync(path.join(tesseractPath, 'dist', 'tesseract.esm.min.js'), path.join(out, 'tesseract.esm.min.js'));
+    fs.copyFileSync(path.join(tesseractPath, 'dist', 'worker.min.js'), path.join(out, 'worker.min.js'));
+
+    for (const variant of ['lstm', 'simd-lstm', 'relaxedsimd-lstm']) {
+        for (const suffix of ['wasm', 'wasm.js']) {
+            const fileName = `tesseract-core-${variant}.${suffix}`;
+            fs.copyFileSync(path.join(corePath, fileName), path.join(coreOutputPath, fileName));
+        }
+    }
+
+    fs.copyFileSync(
+        path.join(japaneseDataPath, '4.0.0_best_int', 'jpn.traineddata.gz'),
+        path.join(languageOutputPath, 'jpn.traineddata.gz'),
+    );
+    fs.copyFileSync(
+        path.join(verticalJapaneseDataPath, '4.0.0_best_int', 'jpn_vert.traineddata.gz'),
+        path.join(languageOutputPath, 'jpn_vert.traineddata.gz'),
+    );
+    fs.copyFileSync(path.join(corePath, 'LICENSE'), path.join(out, 'TESSERACT-CORE-LICENSE'));
+}
+
 
 /**
  * @param {string} scriptPath
@@ -95,4 +132,5 @@ export async function buildLibs() {
     fs.writeFileSync(path.join(extDir, 'lib/validate-schemas.js'), patchedModuleCode);
 
     await copyWasm(path.join(extDir, 'lib'));
+    await copyTesseract(path.join(extDir, 'lib', 'tesseract'));
 }

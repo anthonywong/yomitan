@@ -46,6 +46,16 @@ import {createSchema, normalizeContext} from './profile-conditions-util.js';
 import {RequestBuilder} from './request-builder.js';
 import {injectStylesheet} from './script-manager.js';
 
+const CONTEXT_MENU_LOOKUP = 'yomitan_lookup';
+const CONTEXT_MENU_OCR_ROOT = 'yomitan_ocr';
+const CONTEXT_MENU_OCR_IMAGE_HORIZONTAL = 'yomitan_ocr_image_horizontal';
+const CONTEXT_MENU_OCR_IMAGE_VERTICAL = 'yomitan_ocr_image_vertical';
+const CONTEXT_MENU_OCR_REGION_HORIZONTAL = 'yomitan_ocr_region_horizontal';
+const CONTEXT_MENU_OCR_REGION_VERTICAL = 'yomitan_ocr_region_vertical';
+const CONTEXT_MENU_OCR_REFRESH = 'yomitan_ocr_refresh';
+const CONTEXT_MENU_OCR_CLEAR = 'yomitan_ocr_clear';
+const OCR_MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+
 /**
  * This class controls the core logic of the extension, including API calls
  * and various forms of communication between browser tabs and external applications.
@@ -139,6 +149,10 @@ export class Backend {
         this._permissions = null;
         /** @type {Map<string, (() => void)[]>} */
         this._applicationReadyHandlers = new Map();
+        /** @type {?object} */
+        this._contextMenuSetupToken = null;
+        /** @type {boolean} */
+        this._contextMenuListenerAdded = false;
 
         /* eslint-disable @stylistic/no-multi-spaces */
         /** @type {import('api').ApiMap} */
@@ -147,6 +161,8 @@ export class Backend {
             ['requestBackendReadySignal',    this._onApiRequestBackendReadySignal.bind(this)],
             ['optionsGet',                   this._onApiOptionsGet.bind(this)],
             ['optionsGetFull',               this._onApiOptionsGetFull.bind(this)],
+            ['ocrFetchImage',                this._onApiOcrFetchImage.bind(this)],
+            ['ocrCaptureVisibleTab',         this._onApiOcrCaptureVisibleTab.bind(this)],
             ['kanjiFind',                    this._onApiKanjiFind.bind(this)],
             ['termsFind',                    this._onApiTermsFind.bind(this)],
             ['parseText',                    this._onApiParseText.bind(this)],
@@ -538,6 +554,20 @@ export class Backend {
     /** @type {import('api').ApiHandler<'optionsGetFull'>} */
     _onApiOptionsGetFull() {
         return this._getOptionsFull(false);
+    }
+
+    /** @type {import('api').ApiHandler<'ocrFetchImage'>} */
+    async _onApiOcrFetchImage({url}) {
+        return await this._fetchOcrImage(url);
+    }
+
+    /** @type {import('api').ApiHandler<'ocrCaptureVisibleTab'>} */
+    async _onApiOcrCaptureVisibleTab(_params, sender) {
+        const {tab, frameId} = sender;
+        if (typeof tab?.id !== 'number') {
+            throw new Error('OCR capture is not associated with a browser tab.');
+        }
+        return await this._getScreenshot(tab.id, typeof frameId === 'number' ? frameId : 0, 'png', 100);
     }
 
     /** @type {import('api').ApiHandler<'kanjiFind'>} */
@@ -1545,23 +1575,93 @@ export class Backend {
     _setupContextMenu(options) {
         try {
             if (!chrome.contextMenus) { return; }
-
-            if (options.general.enableContextMenuScanSelected) {
-                chrome.contextMenus.create({
-                    id: 'yomitan_lookup',
-                    title: 'Lookup in Yomitan',
-                    contexts: ['selection'],
-                }, () => this._checkLastError(chrome.runtime.lastError));
-                chrome.contextMenus.onClicked.addListener((info) => {
-                    if (info.selectionText) {
-                        this._sendMessageAllTabsIgnoreResponse({action: 'frontendScanSelectedText'});
-                    }
-                });
-            } else {
-                chrome.contextMenus.remove('yomitan_lookup', () => this._checkLastError(chrome.runtime.lastError));
+            if (!this._contextMenuListenerAdded) {
+                chrome.contextMenus.onClicked.addListener(this._onContextMenuClicked.bind(this));
+                this._contextMenuListenerAdded = true;
             }
+            const token = {};
+            this._contextMenuSetupToken = token;
+            chrome.contextMenus.removeAll(() => {
+                this._checkLastError(chrome.runtime.lastError);
+                if (this._contextMenuSetupToken !== token) { return; }
+                if (options.general.enableContextMenuScanSelected) {
+                    chrome.contextMenus.create({
+                        id: CONTEXT_MENU_LOOKUP,
+                        title: 'Lookup in Yomitan',
+                        contexts: ['selection'],
+                    }, () => this._checkLastError(chrome.runtime.lastError));
+                }
+                if (!options.ocr.enabled) { return; }
+                chrome.contextMenus.create({
+                    id: CONTEXT_MENU_OCR_ROOT,
+                    title: 'Yomitan OCR',
+                    contexts: ['page', 'image'],
+                }, () => this._checkLastError(chrome.runtime.lastError));
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_IMAGE_HORIZONTAL, 'Recognize image (horizontal Japanese)', ['image']);
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_IMAGE_VERTICAL, 'Recognize image (vertical Japanese)', ['image']);
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_REGION_HORIZONTAL, 'Select screen region (horizontal Japanese)', ['page', 'image']);
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_REGION_VERTICAL, 'Select screen region (vertical Japanese)', ['page', 'image']);
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_REFRESH, 'Refresh OCR results', ['page', 'image']);
+                this._createOcrContextMenuItem(CONTEXT_MENU_OCR_CLEAR, 'Remove OCR results', ['page', 'image']);
+            });
         } catch (e) {
             log.error(e);
+        }
+    }
+
+    /**
+     * @param {string} id
+     * @param {string} title
+     * @param {('page'|'image')[]} contexts
+     */
+    _createOcrContextMenuItem(id, title, contexts) {
+        chrome.contextMenus.create({
+            id,
+            parentId: CONTEXT_MENU_OCR_ROOT,
+            title,
+            contexts: /** @type {chrome.contextMenus.CreateProperties['contexts']} */ (contexts),
+        }, () => this._checkLastError(chrome.runtime.lastError));
+    }
+
+    /**
+     * @param {chrome.contextMenus.OnClickData} info
+     * @param {chrome.tabs.Tab|undefined} tab
+     */
+    _onContextMenuClicked(info, tab) {
+        if (typeof tab?.id !== 'number') { return; }
+        const tabId = tab.id;
+        const frameId = typeof info.frameId === 'number' ? info.frameId : 0;
+        switch (info.menuItemId) {
+            case CONTEXT_MENU_LOOKUP:
+                if (info.selectionText) {
+                    this._sendMessageTabIgnoreResponse(tabId, {action: 'frontendScanSelectedText'}, {frameId});
+                }
+                break;
+            case CONTEXT_MENU_OCR_IMAGE_HORIZONTAL:
+            case CONTEXT_MENU_OCR_IMAGE_VERTICAL:
+                this._sendMessageTabIgnoreResponse(tabId, {
+                    action: 'ocrRecognizeImage',
+                    params: {
+                        mode: info.menuItemId === CONTEXT_MENU_OCR_IMAGE_VERTICAL ? 'vertical' : 'horizontal',
+                        srcUrl: info.srcUrl ?? null,
+                    },
+                }, {frameId});
+                break;
+            case CONTEXT_MENU_OCR_REGION_HORIZONTAL:
+            case CONTEXT_MENU_OCR_REGION_VERTICAL:
+                this._sendMessageTabIgnoreResponse(tabId, {
+                    action: 'ocrSelectRegion',
+                    params: {
+                        mode: info.menuItemId === CONTEXT_MENU_OCR_REGION_VERTICAL ? 'vertical' : 'horizontal',
+                    },
+                }, {frameId: 0});
+                break;
+            case CONTEXT_MENU_OCR_REFRESH:
+                this._sendMessageTabIgnoreResponse(tabId, {action: 'ocrRefresh'}, {frameId});
+                break;
+            case CONTEXT_MENU_OCR_CLEAR:
+                this._sendMessageTabIgnoreResponse(tabId, {action: 'ocrClear'}, {frameId});
+                break;
         }
     }
 
@@ -2392,6 +2492,57 @@ export class Backend {
                 }
             }
         }
+    }
+
+    /**
+     * @param {string} url
+     * @returns {Promise<string>}
+     */
+    async _fetchOcrImage(url) {
+        if (typeof url !== 'string' || url.length === 0) {
+            throw new Error('No image URL was supplied.');
+        }
+        if (url.startsWith('data:image/')) {
+            if (url.length > OCR_MAX_IMAGE_BYTES * 1.5) {
+                throw new Error('The image is larger than the 25 MiB limit.');
+            }
+            return url;
+        }
+
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(url);
+        } catch (error) {
+            throw new Error('The image URL is invalid.');
+        }
+        if (parsedUrl.protocol === 'blob:') {
+            throw new Error('Blob images cannot be read by the background process; select the visible screen region instead.');
+        }
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            throw new Error(`The ${parsedUrl.protocol} image protocol is not supported.`);
+        }
+
+        const response = await fetch(url, {
+            credentials: 'omit',
+            cache: 'force-cache',
+            referrerPolicy: 'no-referrer',
+        });
+        if (!response.ok) {
+            throw new Error(`Image request failed with HTTP ${response.status}.`);
+        }
+        const mediaType = response.headers.get('content-type')?.split(';', 1)[0]?.trim() ?? '';
+        if (!mediaType.startsWith('image/')) {
+            throw new Error(`The selected URL returned ${mediaType || 'unknown content'}, not an image.`);
+        }
+        const contentLength = Number(response.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > OCR_MAX_IMAGE_BYTES) {
+            throw new Error('The image is larger than the 25 MiB limit.');
+        }
+        const content = new Uint8Array(await response.arrayBuffer());
+        if (content.length > OCR_MAX_IMAGE_BYTES) {
+            throw new Error('The image is larger than the 25 MiB limit.');
+        }
+        return `data:${mediaType};base64,${arrayBufferToBase64(content)}`;
     }
 
     /**

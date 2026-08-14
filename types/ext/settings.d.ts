@@ -94,6 +94,7 @@ export type ProfileOptions = {
     popupWindow: PopupWindowOptions;
     audio: AudioOptions;
     scanning: ScanningOptions;
+    ocr: OcrOptions;
     translation: TranslationOptions;
     dictionaries: DictionariesOptions;
     parsing: ParsingOptions;
@@ -250,6 +251,10 @@ export type ScanningPreventSecondaryMouseOptions = {
     onPopupPages: boolean;
     onSearchPages: boolean;
     onSearchQuery: boolean;
+};
+
+export type OcrOptions = {
+    enabled: boolean;
 };
 
 export type TranslationOptions = {

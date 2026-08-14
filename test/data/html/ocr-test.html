@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Yomitan OCR integration fixture</title>
+    <style>
+        body {
+            margin: 40px;
+            color: #202124;
+            background: #f5f6f8;
+            font: 16px/1.5 sans-serif;
+        }
+        .fixtures {
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+        }
+        figure {
+            margin: 0;
+            padding: 16px;
+            border: 1px solid #ccd1d8;
+            border-radius: 8px;
+            background: #fff;
+        }
+        img {
+            display: block;
+            border: 1px solid #e1e4e8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Yomitan local OCR integration fixture</h1>
+    <p>Both images contain the dictionary test term <strong>画像</strong>.</p>
+    <div class="fixtures">
+        <figure>
+            <img id="ocr-horizontal" src="ocr-horizontal.svg" width="480" height="240" alt="Horizontal Japanese OCR fixture">
+            <figcaption>Horizontal Japanese</figcaption>
+        </figure>
+        <figure>
+            <img id="ocr-vertical" src="ocr-vertical.svg" width="240" height="480" alt="Vertical Japanese OCR fixture">
+            <figcaption>Vertical Japanese</figcaption>
+        </figure>
+    </div>
+</body>
+</html>

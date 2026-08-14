@@ -138,6 +138,16 @@ type ApiSurface = {
         params: void;
         return: Settings.Options;
     };
+    ocrFetchImage: {
+        params: {
+            url: string;
+        };
+        return: string;
+    };
+    ocrCaptureVisibleTab: {
+        params: void;
+        return: string;
+    };
     termsFind: {
         params: {
             text: string;
