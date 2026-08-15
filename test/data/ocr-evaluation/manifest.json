@@ -1,0 +1,156 @@
+{
+    "schemaVersion": 1,
+    "license": "CC0-1.0",
+    "textNormalization": "NFC",
+    "provenance": {
+        "kind": "generated-in-repository",
+        "description": "Hand-authored deterministic SVG OCR fixtures maintained in the Yomitan repository."
+    },
+    "fixtures": [
+        {
+            "id": "horizontal-gazou",
+            "status": "ready",
+            "category": "synthetic-horizontal",
+            "file": "fixtures/horizontal-gazou.svg",
+            "sha256": "80b8de38d738d3e1003171f55f11f9ca8ad327815ca56b90c0b8b6274c5869ee",
+            "dimensions": {"width": 400, "height": 200},
+            "license": "CC0-1.0",
+            "provenance": {
+                "kind": "generated-in-repository",
+                "description": "Hand-authored SVG containing horizontal Japanese text."
+            },
+            "expectedLines": [
+                {
+                    "order": 0,
+                    "text": "画像",
+                    "polygon": [[30, 42], [238, 42], [238, 136], [30, 136]],
+                    "writingMode": "horizontal-tb",
+                    "characterHitPoints": [
+                        {"character": "画", "index": 0, "point": [86, 92]},
+                        {"character": "像", "index": 1, "point": [170, 92]}
+                    ]
+                }
+            ],
+            "lookupTargets": [
+                {"lineOrder": 0, "point": [86, 92], "expectedTerm": "画像", "dictionaryTerm": "画像"}
+            ],
+            "frameCase": null
+        },
+        {
+            "id": "vertical-gazou",
+            "status": "ready",
+            "category": "synthetic-vertical",
+            "file": "fixtures/vertical-gazou.svg",
+            "sha256": "0b4f544644462ed55e6be6aa1cc0ada5673a397f9c923e81a6a6e6326fec2e8f",
+            "dimensions": {"width": 240, "height": 400},
+            "license": "CC0-1.0",
+            "provenance": {
+                "kind": "generated-in-repository",
+                "description": "Hand-authored SVG containing vertical Japanese text."
+            },
+            "expectedLines": [
+                {
+                    "order": 0,
+                    "text": "画像",
+                    "polygon": [[74, 30], [166, 30], [166, 244], [74, 244]],
+                    "writingMode": "vertical-rl",
+                    "characterHitPoints": [
+                        {"character": "画", "index": 0, "point": [120, 84]},
+                        {"character": "像", "index": 1, "point": [120, 178]}
+                    ]
+                }
+            ],
+            "lookupTargets": [
+                {"lineOrder": 0, "point": [120, 84], "expectedTerm": "画像", "dictionaryTerm": "画像"}
+            ],
+            "frameCase": null
+        },
+        {
+            "id": "isolated-komu",
+            "status": "ready",
+            "category": "isolated-kanji",
+            "file": "fixtures/isolated-komu.svg",
+            "sha256": "f384fb219ff3c740d5adde1edb982e45c3dd249701451ffbd2ed27ff5747358d",
+            "dimensions": {"width": 240, "height": 240},
+            "license": "CC0-1.0",
+            "provenance": {
+                "kind": "generated-in-repository",
+                "description": "Hand-authored SVG covering the isolated-kanji prototype regression."
+            },
+            "expectedLines": [
+                {
+                    "order": 0,
+                    "text": "込",
+                    "polygon": [[64, 42], [186, 42], [186, 176], [64, 176]],
+                    "writingMode": "horizontal-tb",
+                    "characterHitPoints": [
+                        {"character": "込", "index": 0, "point": [125, 108]}
+                    ]
+                }
+            ],
+            "lookupTargets": [
+                {"lineOrder": 0, "point": [125, 108], "expectedTerm": "込", "dictionaryTerm": "込"}
+            ],
+            "frameCase": null
+        },
+        {
+            "id": "mixed-gazou-ocr-2026",
+            "status": "ready",
+            "category": "mixed-text",
+            "file": "fixtures/mixed-gazou-ocr-2026.svg",
+            "sha256": "6a093cfd0d54b5de5dc6e044926a8d90e873ffba82fdd6cb1fa6220dea3b8ed1",
+            "dimensions": {"width": 640, "height": 220},
+            "license": "CC0-1.0",
+            "provenance": {
+                "kind": "generated-in-repository",
+                "description": "Hand-authored SVG containing Japanese, Latin text, and digits."
+            },
+            "expectedLines": [
+                {
+                    "order": 0,
+                    "text": "画像 OCR 2026",
+                    "polygon": [[24, 56], [562, 56], [562, 148], [24, 148]],
+                    "writingMode": "horizontal-tb",
+                    "characterHitPoints": [
+                        {"character": "画", "index": 0, "point": [70, 102]},
+                        {"character": "像", "index": 1, "point": [142, 102]},
+                        {"character": "O", "index": 3, "point": [245, 102]},
+                        {"character": "2", "index": 7, "point": [410, 102]}
+                    ]
+                }
+            ],
+            "lookupTargets": [
+                {"lineOrder": 0, "point": [70, 102], "expectedTerm": "画像", "dictionaryTerm": "画像"}
+            ],
+            "frameCase": null
+        },
+        {
+            "id": "no-text-shapes",
+            "status": "ready",
+            "category": "no-text",
+            "file": "fixtures/no-text-shapes.svg",
+            "sha256": "079b41e0f88d4f9197511da33c58c900bd4289e3c20b964a9d8d0b4a056a7c5f",
+            "dimensions": {"width": 400, "height": 240},
+            "license": "CC0-1.0",
+            "provenance": {
+                "kind": "generated-in-repository",
+                "description": "Hand-authored geometric SVG with no text element."
+            },
+            "expectedLines": [],
+            "lookupTargets": [],
+            "frameCase": null
+        },
+        {
+            "id": "natural-photo-pending",
+            "status": "pending",
+            "category": "natural-photo",
+            "reason": "A redistributable natural-photo source and reviewed line/character ground truth are required before this fixture can run."
+        },
+        {
+            "id": "manga-game-pending",
+            "status": "pending",
+            "category": "manga-game",
+            "reason": "A redistributable manga or game source and reviewed line/character ground truth are required before this fixture can run."
+        }
+    ]
+}

@@ -136,6 +136,18 @@
             "jsconfig": "test"
         },
         {
+            "path": "test/data/ocr-evaluation/schema.json",
+            "typeFile": "types/test/json.d.ts",
+            "type": "AjvSchema"
+        },
+        {
+            "path": "test/data/ocr-evaluation/manifest.json",
+            "typeFile": "types/test/ocr-evaluation.d.ts",
+            "type": "OcrEvaluationManifest",
+            "schema": "test/data/ocr-evaluation/schema.json",
+            "jsconfig": "test"
+        },
+        {
             "path": "test/data/json.json",
             "typeFile": "types/test/json.d.ts",
             "type": "JsonInfo"
