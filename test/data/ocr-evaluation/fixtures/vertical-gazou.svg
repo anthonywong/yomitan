@@ -1,0 +1,5 @@
+<!-- CC0-1.0: Hand-authored Yomitan OCR evaluation fixture. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="400" viewBox="0 0 240 400">
+  <rect width="240" height="400" fill="#ffffff"/>
+  <text x="120" y="36" fill="#111111" font-family="sans-serif" font-size="92" writing-mode="vertical-rl">画像</text>
+</svg>

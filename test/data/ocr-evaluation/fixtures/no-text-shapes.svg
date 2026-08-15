@@ -1,0 +1,6 @@
+<!-- CC0-1.0: Hand-authored Yomitan OCR evaluation fixture. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240">
+  <rect width="400" height="240" fill="#ffffff"/>
+  <circle cx="100" cy="120" r="62" fill="#2962ff"/>
+  <path d="M220 58 L364 120 L220 182 Z" fill="#ff9800"/>
+</svg>
