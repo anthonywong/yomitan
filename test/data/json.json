@@ -148,6 +148,15 @@
             "jsconfig": "test"
         },
         {
+            "path": "dev/data/ocr-assets-schema.json",
+            "typeFile": "types/test/json.d.ts",
+            "type": "AjvSchema"
+        },
+        {
+            "path": "dev/data/ocr-assets-manifest.json",
+            "ignore": true
+        },
+        {
             "path": "test/data/json.json",
             "typeFile": "types/test/json.d.ts",
             "type": "JsonInfo"

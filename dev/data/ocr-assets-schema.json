@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Yomitan packaged OCR asset manifest",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schemaVersion", "assets"],
+    "properties": {
+        "schemaVersion": {"const": 1},
+        "assets": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/asset"}
+        }
+    },
+    "$defs": {
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "safePath": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "version", "path", "sha256", "bytes"],
+            "properties": {
+                "url": {"type": "string", "pattern": "^https://"},
+                "version": {"type": "string", "minLength": 1},
+                "path": {"$ref": "#/$defs/safePath"},
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "bytes": {"type": "integer", "minimum": 1}
+            }
+        },
+        "license": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["spdx", "evidenceUrl"],
+            "properties": {
+                "spdx": {"type": "string", "minLength": 1},
+                "evidenceUrl": {"type": "string", "pattern": "^https://"}
+            }
+        },
+        "transform": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "tool", "inputSha256", "outputSha256"],
+            "properties": {
+                "type": {"const": "copy"},
+                "tool": {"const": null},
+                "inputSha256": {"$ref": "#/$defs/sha256"},
+                "outputSha256": {"$ref": "#/$defs/sha256"}
+            }
+        },
+        "archive": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["format", "requiredEntries"],
+            "properties": {
+                "format": {"const": "tar"},
+                "requiredEntries": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/$defs/safePath"}
+                }
+            }
+        },
+        "asset": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role", "source", "outputSha256", "outputBytes", "license", "redistributionApproved", "transform", "destination"],
+            "properties": {
+                "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+                "role": {"enum": ["runtime-js", "runtime-wasm", "opencv", "detector-model", "recognizer-model", "model-data", "notice"]},
+                "source": {"$ref": "#/$defs/source"},
+                "outputSha256": {"$ref": "#/$defs/sha256"},
+                "outputBytes": {"type": "integer", "minimum": 1},
+                "license": {"$ref": "#/$defs/license"},
+                "redistributionApproved": {"type": "boolean"},
+                "transform": {"$ref": "#/$defs/transform"},
+                "destination": {"$ref": "#/$defs/safePath"},
+                "noticeAssetId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+                "archive": {"$ref": "#/$defs/archive"}
+            },
+            "allOf": [
+                {
+                    "if": {"properties": {"role": {"const": "notice"}}},
+                    "then": {"not": {"required": ["noticeAssetId"]}},
+                    "else": {"required": ["noticeAssetId"]}
+                }
+            ]
+        }
+    }
+}
