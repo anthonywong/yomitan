@@ -40,10 +40,10 @@ function makeTemporaryDirectory() {
 }
 
 /**
- * @param {Array<[string, string]>} entries
+ * @param {Array<[string, string, string?]>} records
  * @returns {Buffer}
  */
-function makeUstarTar(entries) {
+function makeUstarTarRecords(records) {
     /** @type {Buffer[]} */
     const blocks = [];
     /**
@@ -65,12 +65,22 @@ function makeUstarTar(entries) {
         header.write(`${checksum.toString(8).padStart(6, '0')}\0 `, 148, 'ascii');
         blocks.push(header, content, Buffer.alloc(Math.ceil(content.byteLength / 512) * 512 - content.byteLength));
     };
-    writeHeader('model/', '', '5');
-    for (const [name, contents] of entries) {
-        writeHeader(`model/${name}`, contents);
-    }
+    for (const [name, contents, type] of records) { writeHeader(name, contents, type); }
     blocks.push(Buffer.alloc(1024));
     return Buffer.concat(blocks);
+}
+
+/**
+ * @param {Array<[string, string]>} entries
+ * @param {{root?: string, directories?: string[]}} [options]
+ * @returns {Buffer}
+ */
+function makeUstarTar(entries, {root = 'model', directories = []} = {}) {
+    return makeUstarTarRecords([
+        [`${root}/`, '', '5'],
+        ...directories.map((directory) => [`${root}/${directory}/`, '', '5']),
+        ...entries.map(([name, contents]) => [`${root}/${name}`, contents, '0']),
+    ]);
 }
 
 /**
@@ -139,6 +149,31 @@ describe('OCR asset staging', () => {
         expect(staged).toHaveLength(2);
         expect(fs.readFileSync(path.join(outputDirectory, 'models', 'recognizer.tar'))).toStrictEqual(source);
         expect(getUstarTarEntries(source)).toStrictEqual(new Set(['model/inference.onnx', 'model/inference.yml']));
+    });
+
+    test('accepts an official Paddle-style model root and rejects ambiguous tar paths', () => {
+        const root = 'PP-OCRv5_mobile_det_onnx_infer';
+        const source = makeUstarTar(
+            [['inference.onnx', 'model'], ['inference.yml', 'config']],
+            {root, directories: ['.cache', '.cache/huggingface', '.cache/huggingface/download']},
+        );
+        expect(getUstarTarEntries(source)).toStrictEqual(new Set([
+            `${root}/inference.onnx`,
+            `${root}/inference.yml`,
+        ]));
+
+        expect(() => getUstarTarEntries(makeUstarTar([['inference.onnx', 'model']], {root: '../outside'}))).toThrow('unsafe path');
+        expect(() => getUstarTarEntries(makeUstarTar([['inference.onnx', 'model']], {root: '/outside'}))).toThrow('safe relative path');
+        expect(() => getUstarTarEntries(makeUstarTarRecords([
+            ['first/', '', '5'],
+            ['first/inference.onnx', 'model', '0'],
+            ['second/inference.yml', 'config', '0'],
+        ]))).toThrow('exactly one top-level root');
+        expect(() => getUstarTarEntries(makeUstarTarRecords([
+            ['model/', '', '5'],
+            ['model/inference.onnx', 'model', '0'],
+            ['model/inference.onnx', 'duplicate', '0'],
+        ]))).toThrow('duplicate normalized entries');
     });
 
     test('rejects unapproved, missing, corrupted, and extra source assets', () => {

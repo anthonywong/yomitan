@@ -186,6 +186,7 @@ function assertTarChecksum(header) {
 export function getUstarTarEntries(source) {
     if (source.length < 1024 || source.subarray(0, 2).equals(Buffer.from([0x1f, 0x8b]))) { throw new OcrAssetError('model archive must be an uncompressed ustar tar'); }
     const entries = new Set();
+    const entryNames = new Set();
     let root = null;
     let offset = 0;
     let count = 0;
@@ -212,10 +213,15 @@ export function getUstarTarEntries(source) {
         const parts = normalizedEntry.split('/');
         if (root === null) { root = parts[0]; }
         if (parts[0] !== root) { throw new OcrAssetError('tar archive must use exactly one top-level root'); }
+        if (entryNames.has(normalizedEntry)) { throw new OcrAssetError('tar archive has duplicate normalized entries'); }
+        entryNames.add(normalizedEntry);
         if (type === 53) {
-            if (parts.length !== 1 || size !== 0) { throw new OcrAssetError('tar archive directory must be the empty top-level root only'); }
+            // Official PP-OCRv5 archives include .cache/huggingface directory
+            // records below the model root. They are never extracted here; the
+            // single-root and safe-path checks above still make them unambiguous.
+            if (size !== 0) { throw new OcrAssetError('tar archive directory must be empty'); }
         } else if (type === 0 || type === 48) {
-            if (parts.length < 2 || entries.has(normalizedEntry)) { throw new OcrAssetError('tar archive has duplicate or root-level file entry'); }
+            if (parts.length < 2) { throw new OcrAssetError('tar archive has a root-level file entry'); }
             entries.add(normalizedEntry);
             unpackedBytes += size;
             if (unpackedBytes > MAX_TAR_UNPACKED_BYTES) { throw new OcrAssetError('tar archive unpacked size exceeds the limit'); }

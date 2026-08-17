@@ -157,6 +157,10 @@
             "ignore": true
         },
         {
+            "path": "dev/data/ocr-model-candidates.json",
+            "ignore": true
+        },
+        {
             "path": "test/data/json.json",
             "typeFile": "types/test/json.d.ts",
             "type": "JsonInfo"

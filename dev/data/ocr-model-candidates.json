@@ -1,0 +1,63 @@
+{
+    "schemaVersion": 1,
+    "purpose": "Phase-1 model acquisition pins. This file does not authorize download, packaging, or redistribution.",
+    "upstream": {
+        "sdkPackage": "@paddleocr/paddleocr-js",
+        "sdkVersion": "0.4.2",
+        "sdkSourceUrl": "https://github.com/PaddlePaddle/PaddleOCR/tree/main/paddleocr-js/packages/core"
+    },
+    "publicRelease": {
+        "status": "legal-review-required",
+        "gate": "Do not package or redistribute until model provenance and license review are approved."
+    },
+    "models": [
+        {
+            "id": "PP-OCRv5_mobile_det_onnx_infer",
+            "role": "detector",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+            "sha256": "781056046c9ed77a15c94681605db6a0f62317c2e9cce6931c71da2478d4bc30",
+            "bytes": 4843520,
+            "archiveRoot": "PP-OCRv5_mobile_det_onnx_infer"
+        },
+        {
+            "id": "PP-OCRv5_mobile_rec_onnx_infer",
+            "role": "recognizer",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+            "sha256": "f7e792bc836f36e7ef895ad47c426d75b0b75b1650caa6d63fe9418441ffba8c",
+            "bytes": 16701440,
+            "archiveRoot": "PP-OCRv5_mobile_rec_onnx_infer"
+        },
+        {
+            "id": "PP-OCRv6_small_det_onnx_infer",
+            "role": "detector",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+            "sha256": "d218f6fbf0f1c23d2161bd6ac7f5eaa6104fa89955c09290497e31008e2618e4",
+            "bytes": 9891840,
+            "archiveRoot": "PP-OCRv6_small_det_onnx_infer"
+        },
+        {
+            "id": "PP-OCRv6_small_rec_onnx_infer",
+            "role": "recognizer",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+            "sha256": "d267ab077a44a0eedb1ea8f8c542d263f211de8e9d7a029bf9fcfff7e5a88fb1",
+            "bytes": 21319680,
+            "archiveRoot": "PP-OCRv6_small_rec_onnx_infer"
+        },
+        {
+            "id": "PP-OCRv6_tiny_det_onnx_infer",
+            "role": "detector",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_tiny_det_onnx_infer.tar",
+            "sha256": "ff6ab415b0a6e0c488550f2fb5d5046f1719848df220b2dc21b56402a65bc05d",
+            "bytes": 1792000,
+            "archiveRoot": "PP-OCRv6_tiny_det_onnx_infer"
+        },
+        {
+            "id": "PP-OCRv6_tiny_rec_onnx_infer",
+            "role": "recognizer",
+            "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_tiny_rec_onnx_infer.tar",
+            "sha256": "1e13b22717b1edd89d4cde4fda272b6c17d5b505c97c2baea99da1a3a2d54b29",
+            "bytes": 4526080,
+            "archiveRoot": "PP-OCRv6_tiny_rec_onnx_infer"
+        }
+    ]
+}
