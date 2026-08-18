@@ -49,7 +49,7 @@ describe('OCR model acquisition', () => {
         const source = makeModelArchive();
         const candidates = makeCandidates(source);
         const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'yomitan-ocr-acquisition-')); directories.push(parent);
-        const cacheDirectory = path.join(parent, 'cache');
+        const cacheDirectory = path.join(parent, 'new-cache-parent', 'cache');
         const fetchImpl = /** @type {typeof fetch} */ (async () => new Response(source, {status: 200, headers: {'content-length': String(source.byteLength)}}));
         const report = await acquireOcrModelCandidates({candidates, cacheDirectory, fetchImpl, now: () => new Date('2026-08-19T00:00:00.000Z')});
         expect(fs.readFileSync(path.join(cacheDirectory, 'PP-OCRv5_mobile_det_onnx_infer.tar'))).toStrictEqual(source);

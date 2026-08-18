@@ -74,6 +74,7 @@ export async function acquireOcrModelCandidates({candidates, cacheDirectory, fet
     assertOcrModelCandidates(candidates);
     if (typeof cacheDirectory !== 'string' || cacheDirectory.length === 0 || fs.existsSync(cacheDirectory)) { throw new OcrAssetError('OCR model cache directory must not already exist'); }
     const parent = path.dirname(cacheDirectory);
+    fs.mkdirSync(parent, {recursive: true});
     if (!fs.existsSync(parent) || fs.lstatSync(parent).isSymbolicLink()) { throw new OcrAssetError('OCR model cache parent must be an existing real directory'); }
     const stage = fs.mkdtempSync(path.join(parent, `.${path.basename(cacheDirectory)}.stage-`));
     try {
