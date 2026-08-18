@@ -40,7 +40,8 @@ describe('OCR model candidate provenance', () => {
         expect(candidates.upstream).toStrictEqual({
             sdkPackage: '@paddleocr/paddleocr-js',
             sdkVersion: '0.4.2',
-            sdkSourceUrl: 'https://github.com/PaddlePaddle/PaddleOCR/tree/main/paddleocr-js/packages/core',
+            sdkCommit: 'e5046169b225bcdfbe25d45b4e809ff0f1a69c2c',
+            sdkSourceUrl: 'https://github.com/PaddlePaddle/PaddleOCR/tree/e5046169b225bcdfbe25d45b4e809ff0f1a69c2c/paddleocr-js/packages/core',
         });
         expect(candidates.publicRelease).toStrictEqual({
             status: 'legal-review-required',

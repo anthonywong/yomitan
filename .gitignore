@@ -1,6 +1,7 @@
 .DS_Store
 
 node_modules/
+.cache/ocr-models/
 
 builds/
 

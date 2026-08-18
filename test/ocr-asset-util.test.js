@@ -76,11 +76,13 @@ function makeUstarTarRecords(records) {
  * @returns {Buffer}
  */
 function makeUstarTar(entries, {root = 'model', directories = []} = {}) {
-    return makeUstarTarRecords([
+    /** @type {Array<[string, string, string?]>} */
+    const records = [
         [`${root}/`, '', '5'],
-        ...directories.map((directory) => [`${root}/${directory}/`, '', '5']),
-        ...entries.map(([name, contents]) => [`${root}/${name}`, contents, '0']),
-    ]);
+        ...directories.map(/** @returns {[string, string, string]} */ (directory) => [`${root}/${directory}/`, '', '5']),
+        ...entries.map(/** @returns {[string, string, string]} */ ([name, contents]) => [`${root}/${name}`, contents, '0']),
+    ];
+    return makeUstarTarRecords(records);
 }
 
 /**
