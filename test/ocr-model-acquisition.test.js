@@ -10,8 +10,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {afterEach, describe, expect, test} from 'vitest';
-import {acquireOcrModelCandidates, assertOcrModelCandidates, createOcrModelVerificationLock} from '../dev/ocr-model-acquisition.js';
+import {afterEach, describe, expect, test, vi} from 'vitest';
+import {acquireOcrModelCandidates, assertOcrModelCandidates, createOcrModelVerificationLock, OCR_MODEL_FETCH_TIMEOUT_MS} from '../dev/ocr-model-acquisition.js';
 import {getSha256} from '../dev/ocr-asset-util.js';
 
 /** @type {string[]} */
@@ -61,5 +61,35 @@ describe('OCR model acquisition', () => {
         const candidates = makeCandidates(makeModelArchive());
         candidates.models[0].url = 'https://example.test/model.tar';
         expect(() => assertOcrModelCandidates(candidates)).toThrow('invalid');
+    });
+
+    test('rejects a body that exceeds the candidate limit despite a misleading content length', async () => {
+        const source = makeModelArchive();
+        const candidates = makeCandidates(source);
+        const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'yomitan-ocr-acquisition-')); directories.push(parent);
+        const cacheDirectory = path.join(parent, 'cache');
+        const oversized = Buffer.concat([source, Buffer.from('extra')]);
+        const fetchImpl = /** @type {typeof fetch} */ (async () => new Response(oversized, {status: 200, headers: {'content-length': String(source.byteLength)}}));
+        await expect(acquireOcrModelCandidates({candidates, cacheDirectory, fetchImpl})).rejects.toThrow('byte limit');
+        expect(fs.existsSync(cacheDirectory)).toBe(false);
+    });
+
+    test('aborts a stalled response at the fixed download timeout', async () => {
+        vi.useFakeTimers();
+        try {
+            const source = makeModelArchive();
+            const candidates = makeCandidates(source);
+            const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'yomitan-ocr-acquisition-')); directories.push(parent);
+            const cacheDirectory = path.join(parent, 'cache');
+            const stalled = new ReadableStream({pull: () => new Promise(() => {})});
+            const fetchImpl = /** @type {typeof fetch} */ (async () => new Response(stalled, {status: 200, headers: {'content-length': String(source.byteLength)}}));
+            const result = acquireOcrModelCandidates({candidates, cacheDirectory, fetchImpl});
+            const rejection = expect(result).rejects.toMatchObject({name: 'TimeoutError'});
+            await vi.advanceTimersByTimeAsync(OCR_MODEL_FETCH_TIMEOUT_MS);
+            await rejection;
+            expect(fs.existsSync(cacheDirectory)).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

@@ -12,6 +12,7 @@ import path from 'node:path';
 import {assertSafeRelativePath, getSha256, getUstarTarEntries, OcrAssetError} from './ocr-asset-util.js';
 
 export const MAX_OCR_CANDIDATE_BYTES = 32 * 1024 * 1024;
+export const OCR_MODEL_FETCH_TIMEOUT_MS = 30_000;
 const MODEL_ORIGIN = 'https://paddle-model-ecology.bj.bcebos.com';
 const MODEL_PATH_PREFIX = '/paddlex/official_inference_model/paddle3.0.0/';
 
@@ -41,17 +42,56 @@ function assertAllowedModelUrl(value) {
     return url.href;
 }
 
-/** @param {string} url @param {typeof fetch} fetchImpl @returns {Promise<{response: Response, finalUrl: string}>} */
-async function fetchAllowed(url, fetchImpl) {
+/** @param {string} url @param {typeof fetch} fetchImpl @param {AbortSignal} signal @returns {Promise<{response: Response, finalUrl: string}>} */
+async function fetchAllowed(url, fetchImpl, signal) {
     let currentUrl = assertAllowedModelUrl(url);
     for (let redirects = 0; redirects <= 3; ++redirects) {
-        const response = await fetchImpl(currentUrl, {redirect: 'manual'});
+        const response = await fetchImpl(currentUrl, {redirect: 'manual', signal});
         if (response.status < 300 || response.status >= 400) { return {response, finalUrl: currentUrl}; }
         const location = response.headers.get('location');
         if (location === null) { throw new OcrAssetError('OCR model redirect is missing a location'); }
         currentUrl = assertAllowedModelUrl(new URL(location, currentUrl).href);
     }
     throw new OcrAssetError('OCR model has too many redirects');
+}
+
+/** @param {ReadableStreamDefaultReader<Uint8Array>} reader @param {AbortSignal} signal */
+function readWithAbort(reader, signal) {
+    if (signal.aborted) { return Promise.reject(signal.reason); }
+    return new Promise((resolve, reject) => {
+        const onAbort = () => {
+            signal.removeEventListener('abort', onAbort);
+            void reader.cancel(signal.reason);
+            reject(signal.reason);
+        };
+        signal.addEventListener('abort', onAbort, {once: true});
+        reader.read().then(
+            (result) => { signal.removeEventListener('abort', onAbort); resolve(result); },
+            (error) => { signal.removeEventListener('abort', onAbort); reject(error); },
+        );
+    });
+}
+
+/** @param {Response} response @param {number} maximumBytes @param {AbortSignal} signal @returns {Promise<Buffer>} */
+async function readBoundedResponse(response, maximumBytes, signal) {
+    if (response.body === null) { throw new OcrAssetError('OCR model response has no body'); }
+    const reader = response.body.getReader();
+    /** @type {Uint8Array[]} */ const chunks = [];
+    let bytes = 0;
+    try {
+        for (;;) {
+            const {done, value} = /** @type {ReadableStreamReadResult<Uint8Array>} */ (await readWithAbort(reader, signal));
+            if (done) { return Buffer.concat(chunks, bytes); }
+            bytes += value.byteLength;
+            if (bytes > maximumBytes) {
+                void reader.cancel();
+                throw new OcrAssetError('OCR model response exceeds the byte limit');
+            }
+            chunks.push(value);
+        }
+    } finally {
+        reader.releaseLock();
+    }
 }
 
 /** @param {Set<string>} entries @param {{archiveRoot: string}} candidate */
@@ -81,11 +121,20 @@ export async function acquireOcrModelCandidates({candidates, cacheDirectory, fet
         /** @type {Array<{id: string, finalUrl: string, sha256: string, bytes: number, archiveRoot: string}>} */
         const retrieved = [];
         for (const candidate of candidates.models) {
-            const {response, finalUrl} = await fetchAllowed(candidate.url, fetchImpl);
-            if (!response.ok) { throw new OcrAssetError(`OCR model ${candidate.id} download failed with HTTP ${response.status}`); }
-            const declaredBytes = response.headers.get('content-length');
-            if (declaredBytes === null || Number(declaredBytes) !== candidate.bytes) { throw new OcrAssetError(`OCR model ${candidate.id} content length does not match`); }
-            const source = Buffer.from(await response.arrayBuffer());
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(new DOMException('OCR model download timed out', 'TimeoutError')), OCR_MODEL_FETCH_TIMEOUT_MS);
+            /** @type {Buffer} */ let source;
+            /** @type {string} */ let finalUrl;
+            try {
+                const result = await fetchAllowed(candidate.url, fetchImpl, controller.signal);
+                finalUrl = result.finalUrl;
+                if (!result.response.ok) { throw new OcrAssetError(`OCR model ${candidate.id} download failed with HTTP ${result.response.status}`); }
+                const declaredBytes = result.response.headers.get('content-length');
+                if (declaredBytes !== null && Number(declaredBytes) !== candidate.bytes) { throw new OcrAssetError(`OCR model ${candidate.id} content length does not match`); }
+                source = await readBoundedResponse(result.response, Math.min(MAX_OCR_CANDIDATE_BYTES, candidate.bytes), controller.signal);
+            } finally {
+                clearTimeout(timeout);
+            }
             if (source.byteLength !== candidate.bytes || getSha256(source) !== candidate.sha256) { throw new OcrAssetError(`OCR model ${candidate.id} hash or size does not match`); }
             assertCandidateLayout(getUstarTarEntries(source), candidate);
             const output = path.join(stage, `${assertSafeRelativePath(candidate.id, 'OCR candidate ID')}.tar`);
